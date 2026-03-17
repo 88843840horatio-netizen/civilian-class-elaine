@@ -1584,6 +1584,22 @@
     if (dictTa) dictTa.value = Object.entries(getDict()).map(function(e) { return e[0] + '→' + e[1]; }).join('\n');
     renderSummary();
     renderInfoBox();
+        // URL参数导入功能 - 语音输入后自动解析
+    (function initUrlImport() {
+      const params = new URLSearchParams(window.location.search);
+      const importText = params.get('text');
+      if (importText && importText.trim()) {
+        const decoded = decodeURIComponent(importText.trim());
+        const ta = $('voiceTextIn');
+        if (ta) {
+          ta.value = decoded;
+          setTimeout(() => {
+            $('parseBatchBtn')?.click();
+            document.querySelector('[data-panel="voice"]')?.click();
+          }, 500);
+        }
+      }
+    })();
   </script>
 </body>
 </html>
