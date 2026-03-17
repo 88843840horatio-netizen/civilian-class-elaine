@@ -278,7 +278,8 @@
         const s = localStorage.getItem(DICT_KEY);
         if (s) {
           const o = JSON.parse(s);
-          if (o && typeof o === 'object') return o;
+          // 合并：确保“新加的默认纠错词条”也会生效；本地自定义词条优先生效
+          if (o && typeof o === 'object') return { ...DEFAULT_DICT, ...o };
         }
       } catch (_) {}
       return { ...DEFAULT_DICT };
