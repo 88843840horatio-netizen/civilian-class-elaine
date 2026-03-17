@@ -108,6 +108,20 @@
           <button type="button" class="btn-secondary btn-sm" id="templateBtn">样式模板</button>
           <span id="templateName" class="muted" style="font-size:0.8rem;"></span>
         </div>
+        <details class="dict-config" style="margin-bottom:12px;">
+          <summary>云端同步（多设备共享）</summary>
+          <p class="muted" style="margin-top:4px;">需先在 <a href="https://supabase.com" target="_blank" rel="noopener">Supabase</a> 建项目并建表，见 README。同一同步码在多设备可共享数据。</p>
+          <label>项目 URL</label>
+          <input type="text" id="cloudUrl" placeholder="https://xxxx.supabase.co" style="margin-top:4px;" />
+          <label style="margin-top:6px;">Anon Key</label>
+          <input type="text" id="cloudKey" placeholder="eyJ..." style="margin-top:4px;" />
+          <label style="margin-top:6px;">同步码（自设，多设备填相同即可）</label>
+          <input type="text" id="cloudSyncCode" placeholder="如 myclass2025" style="margin-top:4px;" />
+          <div style="display:flex;gap:8px;margin-top:8px;">
+            <button type="button" class="btn-secondary btn-sm" id="cloudLoadBtn">从云端加载</button>
+            <button type="button" class="btn-secondary btn-sm" id="cloudSaveBtn">保存到云端</button>
+          </div>
+        </details>
         <input type="file" id="fileInput" accept=".xlsx,.xls" />
         <input type="file" id="templateInput" accept=".xlsx,.xls" style="display:none;" />
         <div class="summary-tabs" id="summaryDayTabs"></div>
@@ -163,6 +177,46 @@
     const DICT_KEY = 'civilian_class_dict';
     const VOICE_API_KEY = 'civilian_class_voice_api';
     const FORMAT_RULE_KEY = 'civilian_class_format_rule';
+    const CLOUD_SYNC_KEY = 'civilian_class_cloud_sync';
+    const CLOUD_TABLE = 'civilian_class_sync';
+
+    // URL参数导入功能 - 语音输入后自动解析
+    (function initUrlImport() {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const importTextRaw = params.get('text');
+        if (!importTextRaw || !importTextRaw.trim()) return;
+
+        // URLSearchParams 已会解码一次；这里兼容“被二次编码”的情况
+        let decoded = importTextRaw.trim();
+        try { decoded = decodeURIComponent(decoded); } catch (_) {}
+        decoded = decoded.replace(/\+/g, ' ');
+
+        const ta = $('voiceTextIn');
+        if (!ta) return;
+        ta.value = decoded;
+
+        // 先切到语音页再触发解析，确保按钮与面板已就绪
+        setTimeout(() => {
+          document.querySelector('[data-panel="voice"]')?.click();
+          setTimeout(() => { $('parseBatchBtn')?.click(); }, 60);
+        }, 200);
+      } catch (_) {}
+    })();
+
+    function getCloudConfig() {
+      try {
+        const s = localStorage.getItem(CLOUD_SYNC_KEY);
+        if (s) {
+          const o = JSON.parse(s);
+          if (o && typeof o === 'object') return o;
+        }
+      } catch (_) {}
+      return { url: '', anonKey: '', syncCode: '' };
+    }
+    function setCloudConfig(o) {
+      try { localStorage.setItem(CLOUD_SYNC_KEY, JSON.stringify(o)); } catch (_) {}
+    }
 
     const DEFAULT_FORMAT_RULE = `# 文明班加扣分 整理规则（请严格执行）
 ## 一、输出格式
@@ -1424,7 +1478,12 @@
           const ws = buildDaySheet(wd);
           XLSX.utils.book_append_sheet(wb, ws, wd);
         });
-        wb.SheetNames = ['汇总表','周一','周二','周三','周四','周五'];
+        var detailAoa = [['班级','星期','项目','加减分','原因']];
+        (state.records || []).forEach(function(r) {
+          detailAoa.push([r.class || '', r.weekday || '', r.item || '', r.score != null ? r.score : '', r.reason || '']);
+        });
+        var detailWs = XLSX.utils.aoa_to_sheet(detailAoa);
+        XLSX.utils.book_append_sheet(wb, detailWs, '明细');
       }
       const filename = '文明班_' + (state.week || '第1周').replace(/\s/g, '') + '.xlsx';
       XLSX.writeFile(wb, filename);
@@ -1497,9 +1556,10 @@
           renderInfoBox();
           var ub = $('undoImportBtn');
           if (ub) { ub.style.display = 'inline-block'; }
+          alert('已导入 ' + recs.length + ' 条。请查看「汇总视图」。');
         } catch (err) {
           console.error(err);
-          alert('Excel 格式不符合预期，请确认首行为：班级、星期、项目、加减分、原因');
+          alert('Excel 格式不符合预期，请确认有「明细」表且首行为：班级、星期、项目、加减分、原因');
         }
       };
       fr.readAsArrayBuffer(f);
@@ -1514,6 +1574,98 @@
       renderInfoBox();
       var ub = $('undoImportBtn');
       if (ub) ub.style.display = 'none';
+    });
+
+    (function initCloudForm() {
+      var c = getCloudConfig();
+      if ($('cloudUrl')) $('cloudUrl').value = c.url || '';
+      if ($('cloudKey')) $('cloudKey').value = c.anonKey || '';
+      if ($('cloudSyncCode')) $('cloudSyncCode').value = c.syncCode || '';
+    })();
+    function getCloudPayload() {
+      var url = ($('cloudUrl') && $('cloudUrl').value) ? $('cloudUrl').value.trim() : '';
+      var key = ($('cloudKey') && $('cloudKey').value) ? $('cloudKey').value.trim() : '';
+      var code = ($('cloudSyncCode') && $('cloudSyncCode').value) ? $('cloudSyncCode').value.trim() : '';
+      return { url, key, code };
+    }
+    $('cloudLoadBtn').addEventListener('click', function() {
+      var p = getCloudPayload();
+      if (!p.url || !p.key || !p.code) {
+        alert('请填写项目 URL、Anon Key 和同步码。');
+        return;
+      }
+      setCloudConfig({ url: p.url, anonKey: p.key, syncCode: p.code });
+      import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm').then(function(m) {
+        var client = m.createClient(p.url, p.key);
+      client.from(CLOUD_TABLE).select('data').eq('sync_code', p.code).maybeSingle().then(function(r) {
+        if (r.error) {
+          alert('加载失败：' + (r.error.message || r.error));
+          return;
+        }
+        if (!r.data || !r.data.data) {
+          alert('云端暂无该同步码的数据，请先在当前设备点「保存到云端」。');
+          return;
+        }
+        var data = r.data.data;
+        state.term = data.term != null ? data.term : state.term;
+        state.week = data.week != null ? data.week : state.week;
+        state.mondayDate = data.mondayDate != null ? data.mondayDate : (state.mondayDate || '');
+        state.classes = Array.isArray(data.classes) && data.classes.length ? data.classes : state.classes;
+        state.items = Array.isArray(data.items) && data.items.length ? data.items : state.items;
+        state.weekdays = Array.isArray(data.weekdays) && data.weekdays.length ? data.weekdays : state.weekdays;
+        state.records = Array.isArray(data.records) ? data.records.map(function(r) { return { ...r }; }) : [];
+        state.lastUpdated = typeof data.lastUpdated === 'string' ? data.lastUpdated : state.lastUpdated;
+        state.hasExported = !!data.hasExported;
+        state.lastExported = typeof data.lastExported === 'string' ? data.lastExported : (state.lastExported || '');
+        state.recordsBeforeImport = null;
+        $('term').value = state.term;
+        $('week').value = state.week;
+        if ($('mondayDate')) $('mondayDate').value = state.mondayDate || '';
+        saveState();
+        renderSummary();
+        renderInfoBox();
+        alert('已从云端加载 ' + (state.records ? state.records.length : 0) + ' 条。');
+      });
+      }).catch(function(err) {
+        alert('加载失败：' + (err.message || err) + '。请联网后重试。');
+      });
+    });
+    $('cloudSaveBtn').addEventListener('click', function() {
+      var p = getCloudPayload();
+      if (!p.url || !p.key || !p.code) {
+        alert('请填写项目 URL、Anon Key 和同步码。');
+        return;
+      }
+      setCloudConfig({ url: p.url, anonKey: p.key, syncCode: p.code });
+      saveState();
+      var payload = {
+        term: state.term,
+        week: state.week,
+        mondayDate: state.mondayDate || '',
+        classes: state.classes,
+        items: state.items,
+        weekdays: state.weekdays,
+        records: state.records,
+        lastUpdated: state.lastUpdated || '',
+        hasExported: !!state.hasExported,
+        lastExported: state.lastExported || ''
+      };
+      import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm').then(function(m) {
+        var client = m.createClient(p.url, p.key);
+        return client.from(CLOUD_TABLE).upsert({
+          sync_code: p.code,
+          data: payload,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'sync_code' });
+      }).then(function(r) {
+        if (r.error) {
+          alert('保存失败：' + (r.error.message || r.error));
+          return;
+        }
+        alert('已保存到云端。其他设备用相同同步码点「从云端加载」即可。');
+      }).catch(function(err) {
+        alert('保存失败：' + (err.message || err) + '。请联网后重试。');
+      });
     });
 
     var CLEAR_CONFIRM_WORD = '清空'; // 清空数据时的确认词，仅在此处修改，不上传可改为你自己的词
@@ -1584,22 +1736,6 @@
     if (dictTa) dictTa.value = Object.entries(getDict()).map(function(e) { return e[0] + '→' + e[1]; }).join('\n');
     renderSummary();
     renderInfoBox();
-        // URL参数导入功能 - 语音输入后自动解析
-    (function initUrlImport() {
-      const params = new URLSearchParams(window.location.search);
-      const importText = params.get('text');
-      if (importText && importText.trim()) {
-        const decoded = decodeURIComponent(importText.trim());
-        const ta = $('voiceTextIn');
-        if (ta) {
-          ta.value = decoded;
-          setTimeout(() => {
-            $('parseBatchBtn')?.click();
-            document.querySelector('[data-panel="voice"]')?.click();
-          }, 500);
-        }
-      }
-    })();
   </script>
 </body>
 </html>
