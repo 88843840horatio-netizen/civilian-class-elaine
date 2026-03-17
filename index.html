@@ -1,0 +1,1589 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>文明班加扣分</title>
+  <style>
+    :root { --bg: #f0f4f8; --card: #fff; --accent: #2563eb; --danger: #dc2626; --green: #16a34a; }
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: var(--bg); margin: 0; padding: 12px; min-height: 100vh; padding-bottom: 24px; }
+    .container { max-width: 100%; margin: 0 auto; }
+    h1 { font-size: 1.2rem; color: #1e293b; margin: 0 0 12px; }
+    .card { background: var(--card); border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+    label { display: block; font-size: 0.85rem; color: #64748b; margin-bottom: 4px; }
+    input, select, textarea { width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; appearance: none; -webkit-appearance: none; }
+    textarea { min-height: 100px; resize: vertical; }
+    button { padding: 10px 14px; border: none; border-radius: 8px; font-size: 0.95rem; cursor: pointer; min-height: 40px; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-secondary { background: #e2e8f0; color: #334155; }
+    .btn-sm { padding: 6px 10px; font-size: 0.85rem; min-height: 32px; }
+    .voice-btn { width: 48px; height: 48px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 1.3rem; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; border: none; }
+    .voice-btn.recording { background: var(--danger); animation: pulse 1s infinite; }
+    @keyframes pulse { 50% { opacity: .85; } }
+    .tabs { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+    .tabs button { flex: 1; min-width: 70px; }
+    .tabs button.active { background: var(--accent); color: #fff; }
+    .panel { display: none; }
+    .panel.show { display: block; }
+    .muted { color: #64748b; font-size: 0.85rem; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th, td { border: 1px solid #cbd5e1; padding: 6px 8px; }
+    th { background: #e2e8f0; font-weight: 600; position: sticky; top: 0; }
+    .num { text-align: right; }
+    .positive { color: var(--green); }
+    .negative { color: var(--danger); }
+    .grid-wrap { overflow-x: auto; max-height: 70vh; overflow-y: auto; }
+    .grid-wrap td.summary-cell { position: relative; }
+    .grid-wrap td.summary-cell input { width:100%; min-width:2em; border:none; background:transparent; text-align:right; font-size:inherit; }
+    .grid-wrap td.summary-cell input:focus { outline:1px solid var(--accent); background:#fff; }
+    .cell-edit-modal-box { min-width: 220px; }
+    .cell-edit-modal-box label { display:block; margin-top:8px; font-size:0.85rem; color:#64748b; }
+    .cell-edit-modal-box input, .cell-edit-modal-box textarea { width:100%; margin-top:4px; padding:6px; box-sizing:border-box; }
+    .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.4); display:flex; align-items:center; justify-content:center; z-index:100; }
+    .modal-box { background:#fff; border-radius:12px; padding:16px; max-width:90vw; max-height:80vh; overflow:auto; }
+    .modal-box h3 { margin:0 0 12px; font-size:1rem; }
+    .modal-box .fail-list { max-height:200px; overflow-y:auto; font-size:0.85rem; margin:12px 0; }
+    .modal-box .fail-item { padding:6px 0; border-bottom:1px solid #e2e8f0; }
+    .modal-box .modal-actions { display:flex; gap:8px; margin-top:16px; flex-wrap:wrap; }
+    .editable { min-width: 60px; }
+    .editable input, .editable select { width: 100%; margin: 0; padding: 4px 6px; border: none; background: transparent; font-size: inherit; }
+    .editable input:focus, .editable select:focus { outline: 1px solid var(--accent); background: #fff; }
+    .row-del { color: var(--danger); cursor: pointer; padding: 4px 8px; }
+    .confirm-list { max-height: 300px; overflow-y: auto; margin: 12px 0; }
+    .confirm-item { display: flex; gap: 8px; align-items: center; padding: 8px; background: #f8fafc; border-radius: 6px; margin-bottom: 6px; flex-wrap: wrap; }
+    .confirm-item input, .confirm-item select { flex: 1; min-width: 60px; padding: 6px; font-size: 0.9rem; }
+    .confirm-item input.required-empty, .confirm-item select.required-empty { border: 1px solid var(--danger); outline: none; }
+    .confirm-item .remove { color: var(--danger); cursor: pointer; }
+    .week-set { display: flex; gap: 8px; margin-bottom: 12px; }
+    .week-set > div { flex: 1; }
+    .week-set input { margin-bottom: 0; }
+    input[type=file] { display: none; }
+    .summary-tabs { display: flex; gap: 4px; margin-bottom: 8px; flex-wrap: wrap; }
+    .summary-tabs button { padding: 6px 12px; font-size: 0.9rem; }
+    .summary-tabs button.active { background: var(--accent); color: #fff; }
+    .confirm-hint { font-size: 0.9rem; color: #64748b; margin-bottom: 10px; padding: 10px 12px; background: #f0fdf4; border-radius: 8px; border: 1px solid #bbf7d0; opacity: 0; transform: translateY(-8px); transition: opacity 0.3s, transform 0.3s; }
+    .confirm-hint.confirm-hint-show { opacity: 1; transform: translateY(0); }
+    .match-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; font-size: 0.75rem; }
+    .match-ok { color: #16a34a; }
+    .match-miss { color: #94a3b8; }
+    .match-fuzzy { color: #ca8a04; }
+    .dict-config { margin-bottom: 12px; }
+    .dict-config summary { cursor: pointer; color: var(--accent); }
+    .dict-config textarea { font-size: 0.9rem; margin-top: 6px; }
+    .remember-btn { font-size: 0.8rem; color: var(--accent); cursor: pointer; margin-left: 4px; }
+    .info-box { font-size: 0.85rem; color: #64748b; padding: 10px 12px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 12px; }
+    .info-box span { margin-right: 12px; }
+    .info-box .btn-clear { margin-left: 8px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>文明班加扣分</h1>
+
+    <div class="info-box" id="infoBox">
+      <span id="infoText">—</span>
+      <span>录入 <strong id="infoCount">0</strong> 条</span>
+      <span id="infoLastExportWrap" style="display:none;">导出 <strong id="infoLastExport">—</strong></span>
+      <button type="button" class="btn-secondary btn-sm btn-clear" id="clearAllBtn">清空全部数据</button>
+    </div>
+    <div class="card week-set">
+      <div><label>学期</label><input type="text" id="term" placeholder="2025-2026第二学期" /></div>
+      <div><label>第几周</label><input type="text" id="week" placeholder="第1周" /></div>
+      <div><label>本周一日期（说日期时用）</label><input type="text" id="mondayDate" placeholder="如 3月2日 或 2025-03-03" /></div>
+    </div>
+
+    <div class="tabs">
+      <button type="button" data-panel="summary" class="active">汇总视图</button>
+      <button type="button" data-panel="voice">语音批量</button>
+    </div>
+
+    <div id="panelSummary" class="panel show">
+      <div class="card">
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
+          <button type="button" class="btn-secondary" id="backupBtn">数据下载</button>
+          <button type="button" class="btn-secondary" id="restoreBtn">数据上传</button>
+          <button type="button" class="btn-secondary" id="undoImportBtn" style="display:none;">撤回导入</button>
+          <button type="button" class="btn-secondary btn-sm" id="templateBtn">样式模板</button>
+          <span id="templateName" class="muted" style="font-size:0.8rem;"></span>
+        </div>
+        <input type="file" id="fileInput" accept=".xlsx,.xls" />
+        <input type="file" id="templateInput" accept=".xlsx,.xls" style="display:none;" />
+        <div class="summary-tabs" id="summaryDayTabs"></div>
+        <div class="grid-wrap" id="summaryGrid"></div>
+      </div>
+    </div>
+
+    <!-- 语音批量录入 + 确认 -->
+    <div id="panelVoice" class="panel">
+      <div class="card">
+        <details class="dict-config" id="voiceApiConfigWrap">
+          <summary>语音与设置</summary>
+          <label style="margin-top:6px;">代理地址（优先）</label>
+          <input type="url" id="voiceProxyUrl" placeholder="http://127.0.0.1:5000/recognize" style="margin-top:4px;" />
+          <label style="margin-top:8px;">或直连：App ID / Access Token</label>
+          <input type="text" id="voiceAppKey" placeholder="App ID" style="margin-top:4px;" />
+          <input type="text" id="voiceAccessKey" placeholder="Access Token" style="margin-top:4px;" />
+          <button type="button" class="btn-secondary btn-sm" id="saveVoiceApiBtn" style="margin-top:8px;">保存</button>
+        </details>
+        <details class="dict-config">
+          <summary>词条（错别字→正确）</summary>
+          <textarea id="dictText" rows="3" placeholder="建→减&#10;自习课→早读、自习"></textarea>
+          <button type="button" class="btn-secondary btn-sm" id="saveDictBtn">保存</button>
+        </details>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+          <button type="button" class="voice-btn" id="voiceBtn" title="点击开始录音，再点击结束并识别">🎤</button>
+          <div><strong>语音录入</strong></div>
+        </div>
+        <label>输入或粘贴：</label>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <textarea id="voiceTextIn" placeholder="自然说或每行一条" style="flex:1;min-width:200px;"></textarea>
+          <button type="button" class="btn-secondary btn-sm" id="breakSentenceBtn" title="按句号、问号等自动换行">断句</button>
+        </div>
+        <button type="button" class="btn-primary" id="parseBatchBtn" style="width:100%;margin-top:8px;">解析</button>
+
+        <div id="confirmSection" style="display:none;margin-top:16px;">
+          <div id="confirmHint" class="confirm-hint">已识别 0 条，请核对下方（✓=已识别 ✗=需补选）</div>
+          <div class="confirm-list" id="confirmList"></div>
+          <div style="display:flex;gap:8px;">
+            <button type="button" class="btn-primary" id="confirmAddBtn">确认添加全部</button>
+            <button type="button" class="btn-secondary" id="cancelConfirmBtn">取消</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script>
+    const $ = id => document.getElementById(id);
+    const STORAGE_KEY = 'civilian_class_data_v2';
+    const DICT_KEY = 'civilian_class_dict';
+    const VOICE_API_KEY = 'civilian_class_voice_api';
+    const FORMAT_RULE_KEY = 'civilian_class_format_rule';
+
+    const DEFAULT_FORMAT_RULE = `# 文明班加扣分 整理规则（请严格执行）
+## 一、输出格式
+1. 一行一条，纯文本，可直接复制粘贴。
+2. 格式：日期/星期 班级 项目 加/扣X分 原因（有就写，没有不写）
+3. 数字前后**无空格**：七1、八2、九3、加1分、扣1分、3月16日。
+
+## 二、各项目固定写法
+1. **早读加分** 统一原因：**早读氛围好，全班同学认真**
+2. **午休加分** 统一原因：**进入午休状态迅速，全班安静**
+3. **自习安静加分** 统一原因：**自习安静**
+4. **入校** 原因**完全按口述原话**写（未戴红领巾、未戴队徽、拉链、校服等）。
+5. **卫生** 有早上/下午/具体时间→写进原因；无时间→不写原因。
+6. **跑操、升旗** 按口述具体情况写。
+7. **午休扣分** 按口述写：队伍散乱、讲话、吵闹等。
+8. **眼操** 写清楚：时间点、第几节、未做、讲话、拖堂、未摘眼镜等。
+9. **课堂、礼仪** 按口述直接记录。
+
+## 三、通用规则
+- 加分：只写项目+分数，**不额外加原因**（除非早读/午休/自习固定原因）。
+- 扣分：必须写清楚**具体原因**。
+- 口述的**时间点**一律写进原因里。
+- 班级格式：七1～七12、八1～八10、九1～九10，数字紧贴年级。`;
+
+    const DEFAULT_DICT = { '建':'减', '自习':'早读、自习', '学习':'早读、自习', '礼仪':'仪容仪表', '演操':'眼操', '眼链':'眼操' };
+
+    function getFormatRule() {
+      try {
+        const s = localStorage.getItem(FORMAT_RULE_KEY);
+        if (s && s.trim()) return s.trim();
+      } catch (_) {}
+      return DEFAULT_FORMAT_RULE;
+    }
+    function setFormatRule(s) {
+      try { localStorage.setItem(FORMAT_RULE_KEY, (s || '').trim() || DEFAULT_FORMAT_RULE); } catch (_) {}
+    }
+    try { if (!localStorage.getItem(FORMAT_RULE_KEY)) setFormatRule(DEFAULT_FORMAT_RULE); } catch (_) {}
+
+    function getDict() {
+      try {
+        const s = localStorage.getItem(DICT_KEY);
+        if (s) {
+          const o = JSON.parse(s);
+          if (o && typeof o === 'object') return o;
+        }
+      } catch (_) {}
+      return { ...DEFAULT_DICT };
+    }
+    function setDict(o) {
+      try { localStorage.setItem(DICT_KEY, JSON.stringify(o)); } catch (_) {}
+    }
+    function getVoiceApiConfig() {
+      try {
+        const s = localStorage.getItem(VOICE_API_KEY);
+        if (s) {
+          const o = JSON.parse(s);
+          if (o && typeof o === 'object') return o;
+        }
+      } catch (_) {}
+      return { useProxy: true, proxyUrl: '', appKey: '', accessKey: '' };
+    }
+    function setVoiceApiConfig(o) {
+      try { localStorage.setItem(VOICE_API_KEY, JSON.stringify(o)); } catch (_) {}
+    }
+    function applyDict(text) {
+      if (!text) return text;
+      let t = text;
+      const dict = getDict();
+      for (const [from, to] of Object.entries(dict)) {
+        if (from && to != null) t = t.split(from).join(to);
+      }
+      return t;
+    }
+
+    const DEFAULT = {
+      term: '2025-2026第二学期',
+      week: '第1周',
+      classes: ['七（1）','七（2）','七（3）','七（4）','七（5）','七（6）','七（7）','七（8）','七（9）','七（10）','七（11）','七（12）','八（1）','八（2）','八（3）','八（4）','八（5）','八（6）','八（7）','八（8）','八（9）','八（10）','九（1）','九（2）','九（3）','九（4）','九（5）','九（6）','九（7）','九（8）','九（9）','九（10）'],
+      items: [
+        { name: '入校', department: '纪检部' },
+        { name: '早读、自习', department: '学习部' },
+        { name: '卫生', department: '卫生部' },
+        { name: '跑操/升旗', department: '体育部' },
+        { name: '午休', department: '生活部' },
+        { name: '眼操', department: '文娱部' },
+        { name: '课堂', department: '老师负责' },
+        { name: '仪容仪表', department: '老师负责' }
+      ],
+      weekdays: ['周一','周二','周三','周四','周五'],
+      records: []
+    };
+
+    let state = { term: '', week: '', classes: [], items: [], weekdays: [], records: [], lastUpdated: '', hasExported: false, recordsBeforeImport: null };
+    let pendingBatch = [];
+    let templateBuffer = null;
+
+    function loadState() {
+      try {
+        const s = localStorage.getItem(STORAGE_KEY);
+        if (s) {
+          const obj = JSON.parse(s);
+          state.term = obj.term || DEFAULT.term;
+          state.week = obj.week || DEFAULT.week;
+          state.mondayDate = obj.mondayDate || '';
+          state.records = Array.isArray(obj.records) ? obj.records.map(r => ({ ...r })) : [];
+          state.classes = Array.isArray(obj.classes) && obj.classes.length ? obj.classes : DEFAULT.classes;
+          state.items = Array.isArray(obj.items) && obj.items.length ? obj.items : DEFAULT.items;
+          state.weekdays = Array.isArray(obj.weekdays) && obj.weekdays.length ? obj.weekdays : DEFAULT.weekdays;
+          state.lastUpdated = typeof obj.lastUpdated === 'string' ? obj.lastUpdated : '';
+          state.hasExported = !!obj.hasExported;
+          state.lastExported = typeof obj.lastExported === 'string' ? obj.lastExported : '';
+          state.recordsBeforeImport = null;
+        } else {
+          Object.assign(state, { ...DEFAULT, records: [], lastUpdated: '', hasExported: false });
+        }
+      } catch (_) { Object.assign(state, { ...DEFAULT, records: [], lastUpdated: '', hasExported: false }); }
+    }
+
+    function saveState() {
+      state.term = $('term').value.trim() || state.term;
+      state.week = $('week').value.trim() || state.week;
+      try {
+        state.mondayDate = ($('mondayDate') && $('mondayDate').value) ? $('mondayDate').value.trim() : (state.mondayDate || '');
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          term: state.term, week: state.week, mondayDate: state.mondayDate, classes: state.classes, items: state.items, weekdays: state.weekdays, records: state.records, lastUpdated: state.lastUpdated || '', hasExported: !!state.hasExported, lastExported: state.lastExported || ''
+        }));
+      } catch (_) {}
+    }
+    function setLastUpdated() {
+      const now = new Date();
+      state.lastUpdated = (now.getMonth() + 1) + '月' + now.getDate() + '日 ' + now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+    }
+    function renderInfoBox() {
+      const el = $('infoBox');
+      if (!el) return;
+      const countEl = $('infoCount');
+      const timeEl = $('infoText');
+      const exportEl = $('infoExported');
+      if (countEl) countEl.textContent = (state.records && state.records.length) ? state.records.length : 0;
+      if (timeEl) timeEl.textContent = (state.lastUpdated || '—');
+      if (exportEl) exportEl.textContent = state.hasExported ? '是' : '否';
+      const lastExportWrap = $('infoLastExportWrap');
+      const lastExportEl = $('infoLastExport');
+      if (lastExportWrap && lastExportEl) {
+        if (state.lastExported) {
+          lastExportWrap.style.display = '';
+          lastExportEl.textContent = state.lastExported;
+        } else {
+          lastExportWrap.style.display = 'none';
+        }
+      }
+    }
+
+    const itemNames = () => state.items.map(i => (i && i.name) ? i.name : i);
+    const WEEKDAY_NAMES = { '周一':'星期一', '周二':'星期二', '周三':'星期三', '周四':'星期四', '周五':'星期五' };
+    function getDateForWeekday(wd) {
+      const mon = getMondayRef();
+      if (!mon) return null;
+      const idx = ['周一','周二','周三','周四','周五'].indexOf(wd);
+      if (idx < 0) return null;
+      const d = new Date(mon);
+      d.setDate(mon.getDate() + idx);
+      return d;
+    }
+    function getDayTitle(wd) {
+      const d = getDateForWeekday(wd);
+      const weekStr = (state.week || $('week').value || '').trim() || '第1周';
+      const wname = WEEKDAY_NAMES[wd] || wd;
+      if (!d) return (weekStr + ' ' + wd + ' 一天汇总');
+      const y = d.getFullYear(), m = d.getMonth() + 1, day = d.getDate();
+      return (y + '年' + m + '月' + day + '日 (' + weekStr + wname + ') 一天汇总');
+    }
+    function classesByGrade() {
+      const classes = (state.classes && state.classes.length) ? state.classes : DEFAULT.classes;
+      const q = classes.filter(c => String(c).startsWith('七'));
+      const b = classes.filter(c => String(c).startsWith('八'));
+      const j = classes.filter(c => String(c).startsWith('九'));
+      return {
+        q: q.length ? q : classes.slice(0, 12),
+        b: b.length ? b : classes.slice(12, 22),
+        j: j.length ? j : classes.slice(22, 32)
+      };
+    }
+
+    const CN_NUM = { '零':0,'〇':0,'一':1,'二':2,'两':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9,'十':10 };
+    function parseChineseDecimal(s) {
+      const m = s.match(/(?:零|〇)?点(?:零|〇)?([一二三四五六七八九])/);
+      if (m) return CN_NUM[m[1]] / 10;
+      const m2 = s.match(/([零〇一二三四五六七八九十])(?:点|儿)([零〇一二三四五六七八九])/);
+      if (m2) return (CN_NUM[m2[1]] || 0) + CN_NUM[m2[2]] / 10;
+      return null;
+    }
+
+    function getMondayRef() {
+      const raw = ($('mondayDate') && $('mondayDate').value) ? $('mondayDate').value.trim() : (state.mondayDate || '');
+      if (!raw) return null;
+      const d = new Date();
+      const year = d.getFullYear();
+      let month = 0, day = 0;
+      const m1 = raw.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
+      if (m1) { month = parseInt(m1[2], 10) - 1; day = parseInt(m1[3], 10); }
+      else {
+        const m2 = raw.match(/(\d{1,2})月(\d{1,2})日?/);
+        if (m2) { month = parseInt(m2[1], 10) - 1; day = parseInt(m2[2], 10); }
+        else {
+          const m3 = raw.match(/([一二三四五六七八九十]+)月([一二三四五六七八九十\d]+)[日号]?/);
+          if (m3) { month = (CN_NUM[m3[1]] || parseInt(m3[1], 10)) - 1; day = CN_NUM[m3[2]] != null ? CN_NUM[m3[2]] : parseInt(m3[2], 10); }
+        }
+      }
+      if (month < 0 || day < 1) return null;
+      const mon = new Date(year, month, day);
+      const dow = mon.getDay();
+      const diff = dow === 0 ? -6 : 1 - dow;
+      mon.setDate(mon.getDate() + diff);
+      return mon;
+    }
+
+    function dateTextToWeekday(text) {
+      let month = -1, day = -1, year = new Date().getFullYear();
+      const m1 = text.match(/(\d{1,2})月(\d{1,2})[日号]?/);
+      if (m1) { month = parseInt(m1[1], 10); day = parseInt(m1[2], 10); }
+      const m2 = text.match(/([一二三四五六七八九十]+)月([一二三四五六七八九十\d]+)[日号]?/);
+      if (m2) { month = CN_NUM[m2[1]] || parseInt(m2[1], 10); day = CN_NUM[m2[2]] != null ? CN_NUM[m2[2]] : parseInt(m2[2], 10); }
+      const m3 = text.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
+      if (m3) { year = parseInt(m3[1], 10); month = parseInt(m3[2], 10); day = parseInt(m3[3], 10); }
+      if (month < 1 || day < 1) return null;
+      const d = new Date(year, month - 1, day);
+      const dayOfWeek = d.getDay();
+      if (dayOfWeek >= 1 && dayOfWeek <= 5)
+        return ['周一','周二','周三','周四','周五'][dayOfWeek - 1];
+      return null;
+    }
+
+    function parseOneLine(text) {
+      text = (text || '').trim().replace(/\s+/g, ' ');
+      if (!text) return null;
+      const classes = state.classes.length ? state.classes : DEFAULT.classes;
+      const items = itemNames();
+      const weekdays = state.weekdays || DEFAULT.weekdays;
+      let class_ = null, weekday_ = null, item_ = null, score_ = null, reason_ = '';
+
+      weekday_ = dateTextToWeekday(text);
+      if (!weekday_) {
+        for (const w of weekdays) { if (text.includes(w)) { weekday_ = w; break; } }
+      }
+      if (!weekday_) weekday_ = '';
+      for (const c of classes) {
+        if (text.includes(c)) { class_ = c; break; }
+        const m = c.match(/([七八九]).*?(\d+)/);
+        if (m && (text.includes(m[1] + m[2]) || text.includes(m[1] + '（' + m[2] + '）') || text.includes(m[1] + '一') || text.includes(' ' + m[1] + m[2]))) { class_ = c; break; }
+      }
+      if (!class_) {
+        if (text.match(/7\s*1\s*1|7\s*11|711/)) class_ = '七（11）';
+        else if (text.match(/7\s*1\s*2|7\s*12|712/)) class_ = '七（12）';
+        else if (text.includes('七十一')) class_ = '七（11）';
+        else if (text.includes('七十二')) class_ = '七（12）';
+        else {
+          const numClass = text.match(/([789])(\d{1,2})(?:班|$|\s|，|,|\.|。|[\u4e00-\u9fa5]|扣|加|减)/);
+          if (numClass) {
+            const g = parseInt(numClass[1], 10), n = parseInt(numClass[2], 10);
+            if (g === 7 && n >= 1 && n <= 12) class_ = '七（' + n + '）';
+            else if ((g === 8 || g === 9) && n >= 1 && n <= 10) class_ = (g === 8 ? '八' : '九') + '（' + n + '）';
+          }
+        }
+        if (!class_) {
+          const m = text.match(/([七八九])\s*[（(]?\s*(\d{1,2})/);
+          if (m) {
+            const n = parseInt(m[2], 10);
+            if (m[1] === '七' && n >= 1 && n <= 12) class_ = '七（' + n + '）';
+            else if ((m[1] === '八' || m[1] === '九') && n >= 1 && n <= 10) class_ = m[1] + '（' + n + '）';
+          }
+          if (!class_) {
+            const m2 = text.match(/([七八九])([一二三四五六七八九十]+|\d{1,2})/);
+            if (m2) {
+              var n = CN_NUM[m2[2]];
+              if (n == null) n = parseInt(m2[2], 10);
+              if (m2[2].length === 2 && m2[2] === '十') n = 10;
+              else if (m2[2].length === 2 && m2[2][0] === '十') n = 10 + (CN_NUM[m2[2][1]] != null ? CN_NUM[m2[2][1]] : parseInt(m2[2][1], 10) || 0);
+              else if (m2[2].length === 2 && m2[2][1] === '十') n = (CN_NUM[m2[2][0]] != null ? CN_NUM[m2[2][0]] : 0) * 10;
+              if (m2[1] === '七' && n >= 1 && n <= 12) class_ = '七（' + n + '）';
+              else if ((m2[1] === '八' || m2[1] === '九') && n >= 1 && n <= 10) class_ = m2[1] + '（' + n + '）';
+            }
+          }
+        }
+      }
+      let itemFuzzy = false;
+      for (const it of items) { if (text.includes(it)) { item_ = it; break; } }
+      if (!item_ && text.includes('礼仪')) item_ = '仪容仪表';
+      if (!item_) {
+        if ((text.includes('眼') && text.includes('操')) || text.includes('演操')) { item_ = '眼操'; itemFuzzy = true; }
+        else if (text.includes('早读') || text.includes('自习')) { item_ = '早读、自习'; itemFuzzy = true; }
+        else if (text.includes('跑操') || text.includes('升旗')) { item_ = '跑操/升旗'; itemFuzzy = true; }
+        else if (text.includes('入校')) { item_ = '入校'; itemFuzzy = true; }
+        else if (text.includes('午休')) { item_ = '午休'; itemFuzzy = true; }
+        else if (text.includes('卫生')) { item_ = '卫生'; itemFuzzy = true; }
+        else if (text.includes('课堂')) { item_ = '课堂'; itemFuzzy = true; }
+      }
+
+      let v = null;
+      const chDecimal = parseChineseDecimal(text);
+      if (chDecimal != null) {
+        v = text.includes('扣') || text.includes('减') ? -chDecimal : chDecimal;
+      }
+      if (v == null) {
+        const scoreMatch = text.match(/(?:加|扣|减|[\+\-])\s*(?:了)?\s*(\d*\.?\d+)\s*分?|([\+\-]?\d*\.?\d+)\s*分/);
+        if (scoreMatch) {
+          v = parseFloat(scoreMatch[1] || scoreMatch[2]);
+          if ((text.includes('扣') || text.includes('减')) && v > 0) v = -v;
+        }
+      }
+      if (v == null) {
+        const kouJianOne = text.match(/(?:扣|减)\s*(?:了)?\s*1\s*分?/);
+        if (kouJianOne) v = -1;
+        const cnScore = text.match(/(?:扣|减)\s*(?:了)?\s*([一二三四五六七八九十两])分?/);
+        if (cnScore && v == null) {
+          const n = CN_NUM[cnScore[1]] != null ? CN_NUM[cnScore[1]] : (cnScore[1] === '两' ? 2 : 0);
+          if (n >= 1) v = -n;
+        }
+        const cnAdd = text.match(/(?:加)\s*(?:了)?\s*([一二三四五六七八九十]|\d)\s*分?/);
+        if (cnAdd && v == null) {
+          const num = CN_NUM[cnAdd[1]];
+          const n = num != null ? num : parseInt(cnAdd[1], 10);
+          if (n >= 1) v = n;
+        }
+        if (v == null && /[＋+]?\s*1\s*分?/.test(text) && text.includes('加')) v = 1;
+      }
+      if (v != null) score_ = v;
+      var hasReasonWord = /原因|因为|由于|备注/.test(text);
+      if (hasReasonWord && score_ != null && score_ > 0) score_ = -score_;
+
+      var isJia = text.includes('加') && !text.includes('扣') && !text.includes('减');
+      (function extractReason() {
+        var reasonPrefix = /(?:因为|原因是?|由于|备注)[：:]\s*([^。，,\.]+)/;
+        var matchByPrefix = text.match(reasonPrefix);
+        if (matchByPrefix) {
+          reason_ = matchByPrefix[1].trim().slice(0, 80);
+          return;
+        }
+        var timeColon = /\d{1,2}:\d{2}/g;
+        var timePlaceholders = [];
+        var textForReason = text.replace(timeColon, function(s) { timePlaceholders.push(s); return '\uFFFC' + (timePlaceholders.length - 1) + '\uFFFC'; });
+        var colonReason = textForReason.match(/[：:]\s*([^。，,\.]+)/);
+        if (colonReason) {
+          reason_ = colonReason[1].trim().replace(/\uFFFC(\d+)\uFFFC/g, function(_, i) { return timePlaceholders[parseInt(i,10)] || ''; }).slice(0, 80);
+          return;
+        }
+        var protectedText = text.replace(/(\d{1,2})点(\d{1,2})分/g, '__TIME_$1_$2__').replace(/(\d{1,2}):(\d{2})/g, '__COLON_$1_$2__');
+        let rest = protectedText
+          .replace(/(?:是)?\s*\d{1,2}月\d{1,2}[日号]的?/g, '')
+          .replace(/(?:是)?\s*[一二三四五六七八九十]+月[一二三四五六七八九十\d]+[日号]的?/g, '')
+          .replace(/(?:加|扣|减|[\+\-])\s*(?:了)?\s*\d*\.?\d+\s*分?/g, '')
+          .replace(/([\+\-]?\d*\.?\d+)\s*分/g, '')
+          .replace(/(?:零|〇)?点[零〇]?[一二三四五六七八九]/g, '')
+          .replace(/([七八九]（?\d+）?班?|周一|周二|周三|周四|周五|入校|早读、?自习|卫生|跑操|午休|眼操|课堂|仪容|礼仪)/g, '')
+          .replace(/^[\s、，,]+|[\s、，,]+$/g, '').trim();
+        rest = rest.replace(/__TIME_(\d+)_(\d+)__/g, '$1点$2分').replace(/__COLON_(\d+)_(\d+)__/g, '$1:$2');
+        if (rest.length > 0 && rest.length <= 80) {
+          if (/^\d{1,2}$/.test(rest)) reason_ = '学号' + rest;
+          else if (/\d{1,2}号?$/.test(rest)) reason_ = rest.replace(/(\d{1,2})号?$/, '学号$1');
+          else reason_ = rest;
+        }
+        if (reason_) reason_ = reason_.replace(/^后教室/, '教室后').slice(0, 80);
+      })();
+
+      const record = {
+        class: class_ || '',
+        weekday: weekday_ || '',
+        item: item_ || '',
+        score: score_ != null ? score_ : '',
+        reason: reason_
+      };
+      const matched = {
+        class: !!class_,
+        weekday: !!weekday_,
+        item: !!item_,
+        score: score_ != null,
+        reason: reason_ !== '' && reason_ !== text.slice(0, 80),
+        itemFuzzy: itemFuzzy
+      };
+      return { record, matched };
+    }
+
+    const WEEK_SUMMARY_TAB = '本周汇总';
+    function buildWeekSummaryHtml() {
+      const weekdays = ['周一','周二','周三','周四','周五'];
+      const byGrade = classesByGrade();
+      const baseScore = 10;
+      const allClasses = [].concat(byGrade.q, byGrade.b, byGrade.j);
+      const daySums = {};
+      weekdays.forEach(wd => {
+        allClasses.forEach(c => {
+          const recs = state.records.filter(r => r.weekday === wd && r.class === c);
+          let s = 0;
+          recs.forEach(r => { s += (r.score || 0); });
+          daySums[c + '|' + wd] = baseScore + s;
+        });
+      });
+      const totalByClass = {};
+      allClasses.forEach(c => {
+        let t = 0;
+        weekdays.forEach(wd => { t += daySums[c + '|' + wd] || baseScore * 5; });
+        totalByClass[c] = t;
+      });
+      const rankInGrade = (c) => {
+        const grade = c.startsWith('七') ? 'q' : c.startsWith('八') ? 'b' : 'j';
+        const list = byGrade[grade];
+        const totals = list.map(cl => totalByClass[cl]).sort((a, b) => b - a);
+        const myTotal = totalByClass[c];
+        const idx = totals.indexOf(myTotal);
+        return idx >= 0 ? idx + 1 : '';
+      };
+      let html = '<p class="muted" style="margin-bottom:8px;font-weight:600;">本周汇总（分数与排名）</p>';
+      html += '<div style="overflow-x:auto;"><table style="margin-bottom:0;"><thead><tr><th>班级</th>';
+      weekdays.forEach(wd => { html += '<th>' + wd + '</th>'; });
+      html += '<th>总得分</th><th>排名</th></tr></thead><tbody>';
+      allClasses.forEach(c => {
+        html += '<tr><th>' + c + '</th>';
+        weekdays.forEach(wd => { html += '<td class="num">' + (daySums[c + '|' + wd] || '') + '</td>'; });
+        html += '<td class="num">' + (totalByClass[c] || '') + '</td><td class="num">' + rankInGrade(c) + '</td></tr>';
+      });
+      html += '</tbody></table></div>';
+      return html;
+    }
+
+    function renderSummary(keepActiveTab) {
+      const dayTabs = $('summaryDayTabs');
+      const grid = $('summaryGrid');
+      const weekdays = ['周一','周二','周三','周四','周五'];
+      const tabOrder = [WEEK_SUMMARY_TAB].concat(weekdays);
+      const items = itemNames();
+      const byGrade = classesByGrade();
+      const rowLabel = it => (it === '仪容仪表' ? '礼仪' : it);
+      const activeTab = (keepActiveTab && tabOrder.indexOf(keepActiveTab) >= 0) ? keepActiveTab : tabOrder[0];
+
+      dayTabs.innerHTML = tabOrder.map((w) => `<button type="button" class="summary-day ${w === activeTab ? 'active' : ''}" data-w="${w}">${w}</button>`).join('');
+      let currentDay = activeTab;
+
+      const renderGrid = (wd) => {
+        grid.dataset.currentDay = wd;
+        if (wd === WEEK_SUMMARY_TAB) {
+          grid.innerHTML = buildWeekSummaryHtml();
+          return;
+        }
+        const records = state.records.filter(r => r.weekday === wd);
+        const cellMap = {};
+        records.forEach(r => {
+          const key = r.class + '|' + r.item;
+          if (!cellMap[key]) cellMap[key] = { score: 0, reasons: [] };
+          cellMap[key].score += (r.score || 0);
+          if (r.reason) cellMap[key].reasons.push(r.reason);
+        });
+
+        const dayTitle = getDayTitle(wd);
+        let html = '<p class="muted" style="margin-bottom:10px;font-weight:600;">' + dayTitle + '</p>';
+        const baseScore = 10;
+        [['q', '七年级'], ['b', '八年级'], ['j', '九年级']].forEach(([key, gradeName]) => {
+          const classes = byGrade[key];
+          if (!classes || !classes.length) return;
+          html += '<table style="margin-bottom:16px;"><thead><tr><th>项目 \\ 班级</th>';
+          classes.forEach(c => { html += '<th>' + c + '</th>'; });
+          html += '</tr></thead><tbody>';
+          items.forEach(it => {
+            html += '<tr><th>' + rowLabel(it) + '</th>';
+            classes.forEach(c => {
+              const v = cellMap[c + '|' + it];
+              const score = v ? v.score : '';
+              const title = v && v.reasons.length ? v.reasons.join('；') : '';
+              const disp = (score !== '' && score !== 0) ? score : '';
+              const esc = (s) => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+              html += '<td class="num summary-cell" data-class="' + c + '" data-item="' + it + '" title="' + (title ? esc(title) + '；双击可编辑' : '双击可编辑分数与原因') + '"><input type="text" value="' + disp + '" placeholder="0" data-class="' + c + '" data-item="' + it + '" /></td>';
+            });
+            html += '</tr>';
+          });
+          html += '<tr><th>总得分</th>';
+          classes.forEach(c => {
+            let sum = 0;
+            items.forEach(it => { const v = cellMap[c + '|' + it]; if (v) sum += v.score; });
+            html += '<td class="num">' + (baseScore + sum) + '</td>';
+          });
+          html += '</tr></tbody></table>';
+        });
+        grid.innerHTML = html;
+      };
+
+      dayTabs.querySelectorAll('.summary-day').forEach(btn => {
+        btn.addEventListener('click', () => {
+          dayTabs.querySelectorAll('.summary-day').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          renderGrid(btn.dataset.w);
+        });
+      });
+      if (!grid.dataset.summaryListeners) {
+        grid.dataset.summaryListeners = '1';
+      grid.addEventListener('change', function summaryCellChange(e) {
+        const inp = e.target;
+        if (inp && inp.dataset && inp.dataset.class && inp.dataset.item) {
+          const wd = grid.dataset.currentDay;
+          const c = inp.dataset.class, it = inp.dataset.item;
+          if (!wd || !c || !it) return;
+          const raw = (inp.value || '').trim();
+          const score = raw === '' ? 0 : (parseFloat(raw) || 0);
+          const recs = state.records.filter(r => r.weekday === wd && r.class === c && r.item === it);
+          const existingReason = recs.length ? recs.map(r => (r.reason || '').trim()).filter(Boolean).join('；') : '';
+          state.records = state.records.filter(r => !(r.weekday === wd && r.class === c && r.item === it));
+          state.records.push({ class: c, weekday: wd, item: it, score: score, reason: existingReason });
+          setLastUpdated();
+          saveState();
+          renderInfoBox();
+        }
+      });
+      grid.addEventListener('blur', function summaryCellBlur(e) {
+        const inp = e.target;
+        if (inp && inp.dataset && inp.dataset.class && inp.dataset.item) {
+          const wd = grid.dataset.currentDay;
+          const c = inp.dataset.class, it = inp.dataset.item;
+          if (!wd || !c || !it) return;
+          const raw = (inp.value || '').trim();
+          const score = raw === '' ? 0 : (parseFloat(raw) || 0);
+          const recs = state.records.filter(r => r.weekday === wd && r.class === c && r.item === it);
+          const existingReason = recs.length ? recs.map(r => (r.reason || '').trim()).filter(Boolean).join('；') : '';
+          state.records = state.records.filter(r => !(r.weekday === wd && r.class === c && r.item === it));
+          state.records.push({ class: c, weekday: wd, item: it, score: score, reason: existingReason });
+          setLastUpdated();
+          saveState();
+          renderInfoBox();
+        }
+      });
+      grid.addEventListener('dblclick', function(e) {
+        const td = e.target.closest('td.summary-cell');
+        if (!td || !td.dataset.class || !td.dataset.item) return;
+        const wd = grid.dataset.currentDay;
+        if (!wd || wd === '本周汇总') return;
+        const c = td.dataset.class, it = td.dataset.item;
+        const recs = state.records.filter(r => r.weekday === wd && r.class === c && r.item === it);
+        const curScore = recs.length ? recs.reduce((s, r) => s + (Number(r.score) || 0), 0) : 0;
+        const curReason = recs.length ? recs.map(r => (r.reason || '').trim()).filter(Boolean).join('；') : '';
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+        overlay.innerHTML = '<div class="modal-box cell-edit-modal-box">' +
+          '<h3 style="margin:0 0 12px;font-size:1rem;">编辑</h3>' +
+          '<label>分数</label><input type="text" class="cell-edit-score" placeholder="0" />' +
+          '<label>原因</label><input type="text" class="cell-edit-reason" placeholder="选填" />' +
+          '<div class="modal-actions" style="margin-top:12px;"><button type="button" class="btn-primary" data-action="ok">确定</button><button type="button" class="btn-secondary" data-action="cancel">取消</button></div></div>';
+        const scoreInp = overlay.querySelector('.cell-edit-score');
+        const reasonInp = overlay.querySelector('.cell-edit-reason');
+        const modalBox = overlay.querySelector('.modal-box');
+        scoreInp.value = curScore !== 0 ? curScore : '';
+        reasonInp.value = curReason;
+        let closed = false;
+        const close = () => {
+          if (closed) return;
+          closed = true;
+          overlay.remove();
+          renderSummary(wd);
+          renderInfoBox();
+        };
+        if (modalBox) modalBox.addEventListener('click', e => e.stopPropagation());
+        overlay.querySelector('[data-action="cancel"]').onclick = () => close();
+        overlay.querySelector('[data-action="ok"]').onclick = () => {
+          const raw = (scoreInp.value || '').trim();
+          const score = raw === '' ? 0 : (parseFloat(raw) || 0);
+          const reason = (reasonInp.value || '').trim();
+          state.records = state.records.filter(r => !(r.weekday === wd && r.class === c && r.item === it));
+          state.records.push({ class: c, weekday: wd, item: it, score: score, reason: reason });
+          setLastUpdated();
+          saveState();
+          close();
+        };
+        overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+        document.body.appendChild(overlay);
+        scoreInp.focus();
+      });
+      }
+      renderGrid(currentDay);
+    }
+
+    function renderConfirmList() {
+      const list = $('confirmList');
+      const clsOpts = '<option value="">请选择班级</option>' + state.classes.map(c => `<option value="${c}">${c}</option>`).join('');
+      const wdOpts = '<option value="">请选择星期</option>' + state.weekdays.map(w => `<option value="${w}">${w}</option>`).join('');
+      const itOpts = '<option value="">请选择项目</option>' + itemNames().map(n => `<option value="${n}">${n}</option>`).join('');
+
+      list.innerHTML = pendingBatch.map((x, i) => {
+        const r = x.record;
+        const m = x.matched || {};
+        const scoreVal = (r.score === '' || r.score === undefined || r.score === null) ? '' : r.score;
+        const isEmpty = (v) => v === '' || v === undefined || v === null;
+        const clsEmpty = isEmpty(r.class);
+        const wdEmpty = isEmpty(r.weekday);
+        const itEmpty = isEmpty(r.item);
+        const scoreEmpty = isEmpty(scoreVal) && scoreVal !== 0;
+        return `
+        <div class="confirm-item" data-i="${i}">
+          <div style="flex:1 1 100%;display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+            <select class="cls ${clsEmpty ? 'required-empty' : ''}">${clsOpts}</select>
+            <select class="wd ${wdEmpty ? 'required-empty' : ''}">${wdOpts}</select>
+            <select class="it ${itEmpty ? 'required-empty' : ''}">${itOpts}</select>
+            <input type="text" class="score ${scoreEmpty ? 'required-empty' : ''}" value="${scoreVal}" placeholder="分（必填）" style="width:60px" />
+            <input type="text" class="reason" value="${r.reason || ''}" placeholder="备注（可不填）" style="flex:2;min-width:80px" />
+            <span class="remove">删</span>
+          </div>
+          <div class="match-badges">
+            <span class="${m.class ? 'match-ok' : 'match-miss'}">班级${m.class ? '✓' : '✗'}</span>
+            <span class="${m.weekday ? 'match-ok' : 'match-miss'}">星期${m.weekday ? '✓' : '✗'}</span>
+            <span class="${m.item ? (m.itemFuzzy ? 'match-fuzzy' : 'match-ok') : 'match-miss'}">项目${m.item ? (m.itemFuzzy ? '⚠待确认' : '✓') : '✗'}</span>
+            <span class="${m.score ? 'match-ok' : 'match-miss'}">分数${m.score ? '✓' : '✗'}</span>
+            <span class="${m.reason ? 'match-ok' : 'match-miss'}">备注${m.reason ? '✓' : '✗'}</span>
+            ${m.itemFuzzy ? '<span class="match-fuzzy">模糊匹配，请核对</span>' : ''}
+            <span class="remember-btn" data-i="${i}">记住说法</span>
+          </div>
+        </div>
+      `;
+      }).join('');
+
+      pendingBatch.forEach((x, i) => {
+        const r = x.record;
+        const el = list.querySelector(`.confirm-item[data-i="${i}"]`);
+        const scoreVal = (r.score === '' || r.score === undefined || r.score === null) ? '' : r.score;
+        el.querySelector('.cls').value = r.class || '';
+        el.querySelector('.wd').value = r.weekday || '';
+        el.querySelector('.it').value = r.item || '';
+        el.querySelector('.score').value = scoreVal;
+        el.querySelector('.reason').value = r.reason || '';
+      });
+
+      function updateRequiredEmpty(el) {
+        const idx = +el.dataset.i;
+        const cls = el.querySelector('.cls'), wd = el.querySelector('.wd'), it = el.querySelector('.it'), score = el.querySelector('.score');
+        [cls, wd, it, score].forEach(inp => {
+          const v = inp.value;
+          const empty = (v === '' || v === undefined || v === null) && (inp !== score || (v === '' && isNaN(parseFloat(v))));
+          if (inp === score) {
+            const raw = inp.value.trim();
+            const emptyScore = raw === '' || isNaN(parseFloat(raw));
+            inp.classList.toggle('required-empty', emptyScore);
+          } else inp.classList.toggle('required-empty', !v || v === '');
+        });
+      }
+      list.querySelectorAll('.confirm-item').forEach(el => {
+        const idx = +el.dataset.i;
+        const syncFrom = () => {
+          pendingBatch[idx].record = {
+            class: (el.querySelector('.cls').value || '').trim(),
+            weekday: (el.querySelector('.wd').value || '').trim(),
+            item: (el.querySelector('.it').value || '').trim(),
+            score: el.querySelector('.score').value.trim() === '' ? '' : (parseFloat(el.querySelector('.score').value) || 0),
+            reason: el.querySelector('.reason').value.trim()
+          };
+          updateRequiredEmpty(el);
+        };
+        el.querySelector('.cls').addEventListener('change', syncFrom);
+        el.querySelector('.wd').addEventListener('change', syncFrom);
+        el.querySelector('.it').addEventListener('change', syncFrom);
+        el.querySelector('.score').addEventListener('input', syncFrom);
+        el.querySelector('.score').addEventListener('change', syncFrom);
+        el.querySelector('.reason').addEventListener('change', syncFrom);
+        el.querySelector('.remove').addEventListener('click', () => {
+          pendingBatch.splice(idx, 1);
+          if (pendingBatch.length === 0) $('confirmSection').style.display = 'none';
+          else renderConfirmList();
+        });
+        var rememberBtn = el.querySelector('.remember-btn');
+        if (rememberBtn) {
+          rememberBtn.addEventListener('click', () => {
+            var from = prompt('您说的词（识别错的，如 自习课）：', (pendingBatch[idx].rawLine || '').slice(0, 30));
+            if (from == null || !from.trim()) return;
+            var to = prompt('应替换为（正确写法，如 早读、自习）：', pendingBatch[idx].record.item || '');
+            if (to == null) return;
+            from = from.trim();
+            to = to.trim();
+            if (!from) return;
+            var dict = getDict();
+            dict[from] = to || from;
+            setDict(dict);
+            if ($('dictText')) $('dictText').value = Object.entries(dict).map(function(e) { return e[0] + '→' + e[1]; }).join('\n');
+            alert('已记住：' + from + ' → ' + (to || from) + '，下次解析会生效。');
+          });
+        }
+      });
+    }
+
+    function breakSentence() {
+      const ta = $('voiceTextIn');
+      const raw = (ta.value || '').trim();
+      if (!raw) return;
+      const dateStart = /(?:周[一二三四五六日]|星期一|星期二|星期三|星期四|星期五|星期六|星期日|\d{1,2}月\d{1,2}日?|\d{4}-\d{1,2}-\d{1,2})/;
+      const parts = raw.split(RegExp('(?=' + dateStart.source + ')'));
+      const byDate = parts.map(s => s.replace(/\s+/g, ' ').trim()).filter(Boolean);
+      if (byDate.length > 1) {
+        ta.value = byDate.join('\n');
+      } else {
+        const byPunct = raw.split(/[。！？；\n]+/).map(s => s.replace(/\s+/g, ' ').trim()).filter(Boolean);
+        ta.value = byPunct.join('\n');
+      }
+    }
+    $('breakSentenceBtn').addEventListener('click', breakSentence);
+
+    $('parseBatchBtn').addEventListener('click', () => {
+      const raw = $('voiceTextIn').value.trim();
+      const lines = raw.split(/\n+/).map(l => l.trim()).filter(Boolean);
+      pendingBatch = [];
+      lines.forEach(line => {
+        if (line.length < 1) return;
+        const normalized = applyDict(line);
+        const out = parseOneLine(normalized);
+        if (out) pendingBatch.push({ record: out.record, matched: out.matched, rawLine: line });
+      });
+      if (pendingBatch.length === 0) {
+        alert('没有可添加的内容。请再说几句或粘贴一段文字后点解析。');
+        return;
+      }
+      $('confirmSection').style.display = 'block';
+      var hint = document.getElementById('confirmHint');
+      if (hint) {
+        hint.textContent = '已识别 ' + pendingBatch.length + ' 条，请核对下方（✓=已识别 ✗=需补选）';
+        hint.classList.add('confirm-hint-show');
+        setTimeout(function() { hint.classList.remove('confirm-hint-show'); }, 2500);
+      }
+      renderConfirmList();
+    });
+
+    $('confirmAddBtn').addEventListener('click', () => {
+      let hasInvalid = false;
+      document.querySelectorAll('.confirm-item').forEach(el => {
+        const idx = +el.dataset.i;
+        const cls = (el.querySelector('.cls').value || '').trim();
+        const wd = (el.querySelector('.wd').value || '').trim();
+        const it = (el.querySelector('.it').value || '').trim();
+        const scoreRaw = el.querySelector('.score').value.trim();
+        const score = scoreRaw === '' ? '' : (parseFloat(scoreRaw) || 0);
+        pendingBatch[idx].record = {
+          class: cls,
+          weekday: wd,
+          item: it,
+          score: score,
+          reason: (el.querySelector('.reason').value || '').trim()
+        };
+        const clsEl = el.querySelector('.cls'), wdEl = el.querySelector('.wd'), itEl = el.querySelector('.it'), scoreEl = el.querySelector('.score');
+        const needCls = !cls;
+        const needWd = !wd;
+        const needIt = !it;
+        const needScore = scoreRaw === '' || isNaN(parseFloat(scoreRaw));
+        clsEl.classList.toggle('required-empty', needCls);
+        wdEl.classList.toggle('required-empty', needWd);
+        itEl.classList.toggle('required-empty', needIt);
+        scoreEl.classList.toggle('required-empty', needScore);
+        if (needCls || needWd || needIt || needScore) hasInvalid = true;
+      });
+      if (hasInvalid) {
+        alert('请补全所有必填项（班级、星期、项目、加减分），红框处不能为空。');
+        return;
+      }
+      const toAdd = [], failed = [];
+      const norm = (r) => ({
+        class: (r.class || '').trim(),
+        weekday: (r.weekday || '').trim(),
+        item: (r.item || '').trim(),
+        score: (typeof r.score === 'number' && !isNaN(r.score)) ? r.score : (parseFloat(r.score) || 0),
+        reason: String(r.reason || '').trim()
+      });
+      const isDup = (rec) => state.records.some(r =>
+        r.class === rec.class && r.weekday === rec.weekday && r.item === rec.item &&
+        (Number(r.score) || 0) === (Number(rec.score) || 0) &&
+        String(r.reason || '').trim() === rec.reason
+      );
+      pendingBatch.forEach(function(x) {
+        const rec = norm(x.record);
+        if (isDup(rec)) failed.push({ rec, reason: '重复：已存在相同记录' });
+        else toAdd.push(rec);
+      });
+      toAdd.forEach(rec => state.records.push(rec));
+      if (toAdd.length) { setLastUpdated(); saveState(); renderSummary(); renderInfoBox(); }
+      const showResult = (successCount, failList) => {
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+        let msg = '成功导入 ' + successCount + ' 条。';
+        if (failList.length) msg += ' 待确认 ' + failList.length + ' 条。';
+        overlay.innerHTML =
+          '<div class="modal-box">' +
+          '<h3>' + msg + '</h3>' +
+          (failList.length ? '<div class="fail-list">' + failList.map((f, i) =>
+            '<div class="fail-item">' + (i + 1) + '. ' + (f.rec.class + ' ' + f.rec.weekday + ' ' + f.rec.item + ' ' + (f.rec.score >= 0 ? '+' : '') + f.rec.score + (f.rec.reason ? ' ' + f.rec.reason : '')) + ' — <span class="muted">' + (f.reason || '') + '</span></div>'
+          ).join('') + '</div>' +
+          '<div class="modal-actions">' +
+          '<button type="button" class="btn-secondary" data-action="modify">修改</button>' +
+          '<button type="button" class="btn-secondary" data-action="cancel">取消导入</button>' +
+          '<button type="button" class="btn-primary" data-action="force">仍要导入</button>' +
+          '</div></div>' : '') +
+          '</div>';
+        const close = () => { overlay.remove(); };
+        overlay.querySelector('[data-action="cancel"]')?.addEventListener('click', () => { close(); $('confirmSection').style.display = 'none'; $('voiceTextIn').value = ''; });
+        overlay.querySelector('[data-action="modify"]')?.addEventListener('click', () => {
+          close();
+          pendingBatch = failList.map(f => ({ record: { ...f.rec } }));
+          renderConfirmList();
+          $('confirmSection').style.display = 'block';
+        });
+        overlay.querySelector('[data-action="force"]')?.addEventListener('click', () => {
+          if (!confirm('确定强制导入以下 ' + failList.length + ' 条？可能造成重复。')) return;
+          failList.forEach(f => state.records.push(f.rec));
+          setLastUpdated();
+          saveState();
+          renderSummary();
+          renderInfoBox();
+          close();
+          pendingBatch = [];
+          $('confirmSection').style.display = 'none';
+          $('voiceTextIn').value = '';
+        });
+        if (!failList.length) {
+          overlay.innerHTML = '<div class="modal-box"><h3>' + msg + '</h3><div class="modal-actions"><button type="button" class="btn-primary" data-action="ok">确定</button></div></div>';
+          overlay.querySelector('[data-action="ok"]').addEventListener('click', () => { close(); $('confirmSection').style.display = 'none'; $('voiceTextIn').value = ''; });
+        }
+        overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+        document.body.appendChild(overlay);
+      };
+      if (failed.length > 0) {
+        showResult(toAdd.length, failed);
+        pendingBatch = [];
+        $('voiceTextIn').value = '';
+      } else {
+        showResult(toAdd.length, []);
+        pendingBatch = [];
+        $('confirmSection').style.display = 'none';
+        $('voiceTextIn').value = '';
+      }
+    });
+
+    $('cancelConfirmBtn').addEventListener('click', () => {
+      pendingBatch = [];
+      $('confirmSection').style.display = 'none';
+    });
+
+    document.querySelectorAll('.tabs button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('show'));
+        const pid = { summary: 'Summary', voice: 'Voice' }[btn.dataset.panel];
+        if (pid) $('panel' + pid).classList.add('show');
+        if (btn.dataset.panel === 'summary') renderSummary();
+      });
+    });
+
+    const voiceBtn = $('voiceBtn');
+    let recognition = null;
+    if (window.SpeechRecognition || window.webkitSpeechRecognition) {
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognition = new SR();
+      recognition.lang = 'zh-CN';
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.onresult = e => {
+        var toAppend = '';
+        for (var i = e.resultIndex; i < e.results.length; i++) {
+          if (e.results[i].isFinal)
+            toAppend += e.results[i][0].transcript;
+        }
+        if (toAppend) {
+          var ta = $('voiceTextIn');
+          var cur = ta.value.trim();
+          ta.value = cur ? cur + '\n' + toAppend.trim() : toAppend.trim();
+        }
+      };
+      recognition.onend = () => voiceBtn.classList.remove('recording');
+      recognition.onerror = () => voiceBtn.classList.remove('recording');
+    }
+
+    function useDoubaoVoice() {
+      const c = getVoiceApiConfig();
+      if (c.proxyUrl && c.proxyUrl.trim()) return true;
+      if (c.appKey && c.accessKey) return true;
+      return false;
+    }
+    function useProxyForVoice() {
+      const c = getVoiceApiConfig();
+      return !!(c.proxyUrl && c.proxyUrl.trim());
+    }
+    let mediaRecorder = null;
+    let recordedChunks = [];
+
+    voiceBtn.addEventListener('click', () => {
+      if (useDoubaoVoice()) {
+        if (voiceBtn.classList.contains('recording')) {
+          voiceBtn.classList.remove('recording');
+          if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+            mediaRecorder.stop();
+          }
+          return;
+        }
+        navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+          voiceBtn.classList.add('recording');
+          recordedChunks = [];
+          const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
+          mediaRecorder = new MediaRecorder(stream);
+          mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
+          mediaRecorder.onstop = () => {
+            stream.getTracks().forEach(t => t.stop());
+            const blob = new Blob(recordedChunks, { type: mime });
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              const base64 = (reader.result || '').split(',')[1] || '';
+              const cfg = getVoiceApiConfig();
+              const ta = $('voiceTextIn');
+              if (useProxyForVoice()) {
+                const proxyBody = { audioBase64: base64, contentType: mime };
+                try { proxyBody.formatRule = getFormatRule() || ''; } catch (_) {}
+                fetch(cfg.proxyUrl.trim(), {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(proxyBody)
+                }).then(r => {
+                  if (!r.ok) return r.text().then(t => { throw new Error(r.status + ' ' + t.slice(0,100)); });
+                  return r.json();
+                }).then(data => {
+                  const text = (data && data.text) ? String(data.text).trim() : '';
+                  if (text) ta.value = ta.value.trim() ? ta.value.trim() + '\n' + text : text;
+                }).catch(err => alert('代理请求失败：' + (err.message || err)));
+              } else {
+                const url = 'https://openspeech.bytedance.com/api/v3/auc/bigmodel/recognize/flash';
+                const body = {
+                  user: { uid: cfg.appKey },
+                  audio: { data: base64 },
+                  request: { model_name: 'bigmodel' }
+                };
+                fetch(url, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'X-Api-App-Key': cfg.appKey,
+                    'X-Api-Access-Key': cfg.accessKey,
+                    'X-Api-Resource-Id': 'volc.bigasr.auc_turbo',
+                    'X-Api-Request-Id': 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random()*16|0; const v = c === 'x' ? r : (r&0x3|0x8); return v.toString(16); }),
+                    'X-Api-Sequence': '-1'
+                  },
+                  body: JSON.stringify(body)
+                }).then(r => {
+                  const code = r.headers.get('X-Api-Status-Code');
+                  return r.json().then(data => ({ code, data, ok: r.ok })).catch(() => ({ code: r.status, data: null, ok: r.ok }));
+                }).then(({ code, data, ok }) => {
+                  if (ok && code === '20000000' && data && data.result && data.result.text) {
+                    const text = String(data.result.text).trim();
+                    if (text) ta.value = ta.value.trim() ? ta.value.trim() + '\n' + text : text;
+                  } else {
+                    const msg = (data && data.result && data.result.text) ? data.result.text : (code === '45000151' ? '音频格式不支持，请使用代理（代理会转成 wav）' : (code ? '错误码 ' + code : ''));
+                    alert('识别失败：' + (msg || '请检查 App ID / Access Token，或改用代理'));
+                  }
+                }).catch(err => alert('请求失败：' + (err.message || err) + '。直连常因跨域被拦截，请填写代理地址使用代理。'));
+              }
+            };
+            reader.readAsDataURL(blob);
+          };
+          mediaRecorder.start();
+        }).catch(() => alert('无法获取麦克风权限'));
+        return;
+      }
+      if (!recognition) { alert('请用 Chrome 或 Edge 打开'); return; }
+      if (voiceBtn.classList.contains('recording')) { recognition.stop(); return; }
+      voiceBtn.classList.add('recording');
+      $('voiceTextIn').focus();
+      recognition.start();
+    });
+
+    function buildDaySheet(wd) {
+      const items = itemNames();
+      const rowLabel = it => (it === '仪容仪表' ? '礼仪' : it);
+      const byGrade = classesByGrade();
+      const records = state.records.filter(r => r.weekday === wd);
+      const cellMap = {};
+      records.forEach(r => {
+        const key = r.class + '|' + r.item;
+        if (!cellMap[key]) cellMap[key] = { score: 0, reasons: [], positiveSum: 0 };
+        cellMap[key].score += (r.score || 0);
+        if (r.score > 0) cellMap[key].positiveSum += r.score;
+        if (r.reason && r.reason.trim()) cellMap[key].reasons.push(r.reason.trim());
+      });
+      Object.keys(cellMap).forEach(key => {
+        const c = cellMap[key];
+        if (c.score === 0 && c.positiveSum > 0 && c.reasons.length) {
+          c.reasons.push('但当日有+' + c.positiveSum + '分，现分数已抵消');
+        }
+      });
+      const dayTitle = getDayTitle(wd);
+      const aoa = [];
+      let rowIndex = 0;
+      aoa[rowIndex++] = [dayTitle];
+      const blocks = [
+        [byGrade.q, '七', 12],
+        [byGrade.b, '八', 10],
+        [byGrade.j, '九', 10]
+      ];
+      const commentCells = [];
+      dayBlockRanges = [{ r0: 0, r1: 0, c0: 0, c1: 12 }];
+      blocks.forEach(([classes, _, colCount]) => {
+        if (!classes || !classes.length) return;
+        const r0 = rowIndex;
+        const headerRow = [''];
+        classes.forEach(c => headerRow.push(c));
+        aoa[rowIndex++] = headerRow;
+        const dataStartRow = rowIndex;
+        items.forEach((it, ii) => {
+          const row = [rowLabel(it)];
+          classes.forEach((c, jj) => {
+            const cell = cellMap[c + '|' + it];
+            const v = cell ? cell.score : 0;
+            row.push(v !== undefined && v !== 0 ? v : '');
+            if (cell && cell.reasons && cell.reasons.length) {
+              commentCells.push({ r: dataStartRow + ii, c: 1 + jj, text: cell.reasons.join('\n') });
+            }
+          });
+          aoa[rowIndex++] = row;
+        });
+        const totalRow = ['总得分'];
+        const baseScore = 10;
+        for (let col = 0; col < classes.length; col++) {
+          let sum = 0;
+          for (let r = 0; r < items.length; r++) {
+            const v = aoa[dataStartRow + r][col + 1];
+            if (v !== '' && v != null && !isNaN(Number(v))) sum += Number(v);
+          }
+          totalRow.push(baseScore + sum);
+        }
+        aoa[rowIndex++] = totalRow;
+        dayBlockRanges.push({ r0: r0, r1: rowIndex - 1, c0: 0, c1: classes.length });
+        rowIndex++;
+      });
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
+      if (aoa[0] && aoa[0][0]) ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 12 } }];
+      commentCells.forEach(({ r, c, text }) => {
+        const ref = XLSX.utils.encode_cell({ r, c });
+        if (ws[ref]) {
+          ws[ref].c = [];
+          ws[ref].c.hidden = true;
+          ws[ref].c.push({ a: '明细', t: text });
+        }
+      });
+      applySheetBorders(ws, dayBlockRanges);
+      return ws;
+    }
+
+    var dayBlockRanges = [];
+    function applySheetBorders(ws, blocks) {
+      if (!blocks || !blocks.length) return;
+      var thin = { style: 'thin', color: { rgb: '000000' } };
+      var medium = { style: 'medium', color: { rgb: '000000' } };
+      blocks.forEach(function(block) {
+        var r0 = block.r0, r1 = block.r1, c0 = block.c0, c1 = block.c1;
+        for (var r = r0; r <= r1; r++) {
+          for (var c = c0; c <= c1; c++) {
+            var ref = XLSX.utils.encode_cell({ r: r, c: c });
+            if (!ws[ref]) ws[ref] = { t: 's', v: '' };
+            if (!ws[ref].s) ws[ref].s = {};
+            ws[ref].s.border = {
+              top: (r === r0 ? medium : thin),
+              bottom: (r === r1 ? medium : thin),
+              left: (c === c0 ? medium : thin),
+              right: (c === c1 ? medium : thin)
+            };
+          }
+        }
+      });
+    }
+
+    function fillTemplateDaySheet(ws, wd) {
+      const items = itemNames();
+      const byGrade = classesByGrade();
+      const records = state.records.filter(r => r.weekday === wd);
+      const cellMap = {};
+      records.forEach(r => {
+        const key = r.class + '|' + r.item;
+        if (!cellMap[key]) cellMap[key] = { score: 0, reasons: [], positiveSum: 0 };
+        cellMap[key].score += (r.score || 0);
+        if (r.score > 0) cellMap[key].positiveSum += r.score;
+        if (r.reason && r.reason.trim()) cellMap[key].reasons.push(r.reason.trim());
+      });
+      Object.keys(cellMap).forEach(key => {
+        const c = cellMap[key];
+        if (c.score === 0 && c.positiveSum > 0 && c.reasons.length) {
+          c.reasons.push('但当日有+' + c.positiveSum + '分，现分数已抵消');
+        }
+      });
+      const dayTitle = getDayTitle(wd);
+      if (ws['A1']) ws['A1'].v = dayTitle;
+      const blocks = [
+        [byGrade.q, 2, 12],
+        [byGrade.b, 13, 10],
+        [byGrade.j, 24, 10]
+      ];
+      blocks.forEach(([classes, dataStartRow, colCount]) => {
+        if (!classes || !classes.length) return;
+        for (let ii = 0; ii < items.length; ii++) {
+          for (let jj = 0; jj < classes.length; jj++) {
+            const key = classes[jj] + '|' + items[ii];
+            const cell = cellMap[key];
+            const v = cell ? cell.score : 0;
+            const ref = XLSX.utils.encode_cell({ r: dataStartRow + ii, c: 1 + jj });
+            if (!ws[ref]) ws[ref] = {};
+            ws[ref].v = (v !== undefined && v !== 0) ? v : '';
+            if (cell && cell.reasons && cell.reasons.length) {
+              ws[ref].c = [];
+              ws[ref].c.hidden = true;
+              ws[ref].c.push({ a: '明细', t: cell.reasons.join('\n') });
+            }
+          }
+        }
+      });
+    }
+
+    function buildSummarySheet() {
+      const weekdays = ['周一','周二','周三','周四','周五'];
+      const dayNames = ['星期一','星期二','星期三','星期四','星期五'];
+      const byGrade = classesByGrade();
+      const title = ((state.term || '').trim() + (state.week || '').trim() + '汇总') || '汇总';
+      const aoa = [];
+      let ri = 0;
+      aoa[ri++] = [title];
+      aoa[ri++] = [''].concat(byGrade.q);
+      for (let d = 0; d < 5; d++) {
+        const row = [dayNames[d]];
+        for (let j = 0; j < byGrade.q.length; j++) {
+          const col = XLSX.utils.encode_col(1 + j);
+          row.push('=' + weekdays[d] + '!' + col + '11');
+        }
+        aoa[ri++] = row;
+      }
+      aoa[ri++] = ['总得分'].concat(byGrade.q.map((_, j) => {
+        const col = XLSX.utils.encode_col(1 + j);
+        return '=SUM(' + col + '3:' + col + '7)';
+      }));
+      aoa[ri++] = ['排名'].concat(byGrade.q.map((_, j) => {
+        const col = XLSX.utils.encode_col(1 + j);
+        return '=RANK.EQ(' + col + '8,$B$8:$M$8)';
+      }));
+      ri++;
+      aoa[ri++] = [''].concat(byGrade.b);
+      const row12 = ri + 1;
+      for (let d = 0; d < 5; d++) {
+        const row = [dayNames[d]];
+        for (let j = 0; j < byGrade.b.length; j++) {
+          const col = XLSX.utils.encode_col(1 + j);
+          row.push('=' + weekdays[d] + '!' + col + '22');
+        }
+        aoa[ri++] = row;
+      }
+      const row17 = ri + 1;
+      aoa[ri++] = ['总得分'].concat(byGrade.b.map((_, j) => {
+        const col = XLSX.utils.encode_col(1 + j);
+        return '=SUM(' + col + row12 + ':' + col + (row17 - 1) + ')';
+      }));
+      aoa[ri++] = ['排名'].concat(byGrade.b.map((_, j) => {
+        const col = XLSX.utils.encode_col(1 + j);
+        return '=RANK.EQ(' + col + row17 + ',$B$' + row17 + ':$K$' + row17 + ')';
+      }));
+      ri++;
+      aoa[ri++] = [''].concat(byGrade.j);
+      const row22 = ri + 1;
+      for (let d = 0; d < 5; d++) {
+        const row = [dayNames[d]];
+        for (let j = 0; j < byGrade.j.length; j++) {
+          const col = XLSX.utils.encode_col(1 + j);
+          row.push('=' + weekdays[d] + '!' + col + '33');
+        }
+        aoa[ri++] = row;
+      }
+      const row27 = ri + 1;
+      aoa[ri++] = ['总得分'].concat(byGrade.j.map((_, j) => {
+        const col = XLSX.utils.encode_col(1 + j);
+        return '=SUM(' + col + row22 + ':' + col + (row27 - 1) + ')';
+      }));
+      aoa[ri++] = ['排名'].concat(byGrade.j.map((_, j) => {
+        const col = XLSX.utils.encode_col(1 + j);
+        return '=RANK.EQ(' + col + row27 + ',$B$' + row27 + ':$K$' + row27 + ')';
+      }));
+      var summaryBlockRanges = [
+        { r0: 1, r1: 8, c0: 0, c1: byGrade.q.length },
+        { r0: 9, r1: 16, c0: 0, c1: (byGrade.b && byGrade.b.length) || 10 },
+        { r0: 17, r1: 26, c0: 0, c1: (byGrade.j && byGrade.j.length) || 10 }
+      ];
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
+      if (!ws['!merges']) ws['!merges'] = [];
+      ws['!merges'].push({ s: { r: 0, c: 0 }, e: { r: 0, c: Math.max(12, byGrade.q.length) } });
+      Object.keys(ws).filter(k => k.charAt(0) !== '!').forEach(ref => {
+        const cell = ws[ref];
+        if (cell && typeof cell.v === 'string' && cell.v.charAt(0) === '=') {
+          cell.f = cell.v;
+          cell.t = 'f';
+        }
+      });
+      var baseScore = 10;
+      var totalByClass = {};
+      [].concat(byGrade.q || [], byGrade.b || [], byGrade.j || []).forEach(function(c) {
+        var t = 0;
+        ['周一','周二','周三','周四','周五'].forEach(function(wd) {
+          var daySum = baseScore + (state.records || []).filter(function(r) { return r.weekday === wd && r.class === c; }).reduce(function(s, r) { return s + (Number(r.score) || 0); }, 0);
+          t += daySum;
+        });
+        totalByClass[c] = t;
+      });
+      function topRankClasses(classes) {
+        if (!classes || !classes.length) return new Set();
+        var ordered = classes.map(function(c) { return { class: c, total: totalByClass[c] || 0 }; }).sort(function(a, b) { return b.total - a.total; });
+        var topK = Math.max(1, Math.ceil(classes.length * 0.05));
+        while (topK > 0 && topK < ordered.length && ordered[topK - 1].total === ordered[topK].total) topK--;
+        var set = new Set();
+        for (var i = 0; i < topK; i++) set.add(ordered[i].class);
+        return set;
+      }
+      var highlightQ = topRankClasses(byGrade.q);
+      var highlightB = topRankClasses(byGrade.b);
+      var highlightJ = topRankClasses(byGrade.j);
+      var yellowFill = { fgColor: { rgb: 'FFFFFF00' } };
+      [1, 2, 3].forEach(function(block) {
+        var list = block === 1 ? byGrade.q : block === 2 ? byGrade.b : byGrade.j;
+        var rankRow = block === 1 ? 8 : block === 2 ? 17 : 27;
+        var highlightSet = block === 1 ? highlightQ : block === 2 ? highlightB : highlightJ;
+        if (!list || !list.length) return;
+        for (var j = 0; j < list.length; j++) {
+          if (!highlightSet.has(list[j])) continue;
+          var ref = XLSX.utils.encode_cell({ r: rankRow, c: 1 + j });
+          if (ws[ref]) {
+            if (!ws[ref].s) ws[ref].s = {};
+            ws[ref].s.fill = yellowFill;
+          }
+        }
+      });
+      applySheetBorders(ws, summaryBlockRanges);
+      return ws;
+    }
+
+    $('backupBtn').addEventListener('click', () => {
+      saveState();
+      if (typeof XLSX === 'undefined') {
+        alert('当前无法生成 Excel，请联网后再试。');
+        return;
+      }
+      let wb;
+      if (templateBuffer) {
+        try {
+          wb = XLSX.read(new Uint8Array(templateBuffer), { type: 'array' });
+          ['周一','周二','周三','周四','周五'].forEach(wd => {
+            if (wb.Sheets[wd]) fillTemplateDaySheet(wb.Sheets[wd], wd);
+          });
+          if (wb.SheetNames && wb.SheetNames.includes('明细')) {
+            wb.SheetNames = wb.SheetNames.filter(n => n !== '明细');
+            delete wb.Sheets['明细'];
+          }
+        } catch (err) {
+          console.error(err);
+          alert('模板读取失败，将按默认方式生成。');
+          templateBuffer = null;
+          wb = null;
+        }
+      }
+      if (!wb) {
+        wb = XLSX.utils.book_new();
+        const summaryWs = buildSummarySheet();
+        XLSX.utils.book_append_sheet(wb, summaryWs, '汇总表');
+        ['周一','周二','周三','周四','周五'].forEach(wd => {
+          const ws = buildDaySheet(wd);
+          XLSX.utils.book_append_sheet(wb, ws, wd);
+        });
+        wb.SheetNames = ['汇总表','周一','周二','周三','周四','周五'];
+      }
+      const filename = '文明班_' + (state.week || '第1周').replace(/\s/g, '') + '.xlsx';
+      XLSX.writeFile(wb, filename);
+      state.hasExported = true;
+      const now = new Date();
+      state.lastExported = (now.getMonth() + 1) + '月' + now.getDate() + '日 ' + now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+      saveState();
+      renderInfoBox();
+    });
+    $('templateBtn').addEventListener('click', () => $('templateInput').click());
+    $('templateInput').addEventListener('change', e => {
+      const f = e.target.files[0];
+      if (!f) return;
+      const fr = new FileReader();
+      fr.onload = ev => {
+        templateBuffer = ev.target.result;
+        $('templateName').textContent = '已选：' + f.name;
+      };
+      fr.readAsArrayBuffer(f);
+      e.target.value = '';
+    });
+
+    $('restoreBtn').addEventListener('click', () => $('fileInput').click());
+    $('fileInput').addEventListener('change', e => {
+      const f = e.target.files[0];
+      if (!f) return;
+      if (!/\.xlsx?$/i.test(f.name)) {
+        alert('请选择 Excel 文件（.xlsx）');
+        e.target.value = '';
+        return;
+      }
+      const fr = new FileReader();
+      fr.onload = ev => {
+        try {
+          if (typeof XLSX === 'undefined') {
+            alert('当前无法读取 Excel，请联网后再试。');
+            return;
+          }
+          const data = new Uint8Array(ev.target.result);
+          const wb = XLSX.read(data, { type: 'array' });
+          const sheetName = wb.SheetNames.includes('明细') ? '明细' : wb.SheetNames[0];
+          const ws = wb.Sheets[sheetName];
+          const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+          const recs = [];
+          for (let i = 1; i < rows.length; i++) {
+            const row = rows[i];
+            if (!row || row.length === 0) continue;
+            const cls = (row[0] || '').toString().trim();
+            const wd = (row[1] || '').toString().trim();
+            const it = (row[2] || '').toString().trim();
+            const scRaw = row[3];
+            const reason = (row[4] == null ? '' : row[4]).toString().trim();
+            if (!cls || !wd || !it) continue;
+            const sc = parseFloat(scRaw);
+            recs.push({
+              class: cls,
+              weekday: wd,
+              item: it,
+              score: isNaN(sc) ? 0 : sc,
+              reason
+            });
+          }
+          state.recordsBeforeImport = state.records.length ? state.records.map(r => ({ ...r })) : [];
+          state.records = recs;
+          $('term').value = state.term;
+          $('week').value = state.week;
+          setLastUpdated();
+          saveState();
+          renderSummary();
+          renderInfoBox();
+          var ub = $('undoImportBtn');
+          if (ub) { ub.style.display = 'inline-block'; }
+        } catch (err) {
+          console.error(err);
+          alert('Excel 格式不符合预期，请确认首行为：班级、星期、项目、加减分、原因');
+        }
+      };
+      fr.readAsArrayBuffer(f);
+      e.target.value = '';
+    });
+    $('undoImportBtn').addEventListener('click', () => {
+      if (state.recordsBeforeImport == null) return;
+      state.records = state.recordsBeforeImport.map(r => ({ ...r }));
+      state.recordsBeforeImport = null;
+      saveState();
+      renderSummary();
+      renderInfoBox();
+      var ub = $('undoImportBtn');
+      if (ub) ub.style.display = 'none';
+    });
+
+    var CLEAR_CONFIRM_WORD = '清空'; // 清空数据时的确认词，仅在此处修改，不上传可改为你自己的词
+    $('clearAllBtn').addEventListener('click', () => {
+      const input = prompt('请输入确认词以清空本周数据：');
+      if (input === null) return;
+      if ((input || '').trim() !== CLEAR_CONFIRM_WORD) {
+        alert('确认词不符，未清空。');
+        return;
+      }
+      state.records = [];
+      state.lastUpdated = '';
+      state.hasExported = false;
+      saveState();
+      renderSummary();
+      renderInfoBox();
+      alert('已清空。');
+    });
+
+    $('saveDictBtn').addEventListener('click', () => {
+      const ta = $('dictText');
+      if (!ta) return;
+      const lines = ta.value.trim().split(/\n/).filter(Boolean);
+      const dict = {};
+      lines.forEach(line => {
+        const idx = line.indexOf('→');
+        if (idx > 0) {
+          const from = line.slice(0, idx).trim();
+          const to = line.slice(idx + 1).trim();
+          if (from) dict[from] = to;
+        }
+      });
+      setDict(dict);
+      alert('词条已保存，共 ' + Object.keys(dict).length + ' 条。');
+    });
+
+    (function initVoiceApiForm() {
+      const c = getVoiceApiConfig();
+      const p = $('voiceProxyUrl');
+      const a = $('voiceAppKey');
+      const k = $('voiceAccessKey');
+      if (p) p.value = c.proxyUrl || '';
+      if (a) a.value = c.appKey || '';
+      if (k) k.value = c.accessKey || '';
+    })();
+    $('saveVoiceApiBtn').addEventListener('click', () => {
+      setVoiceApiConfig({
+        useProxy: false,
+        proxyUrl: ($('voiceProxyUrl') && $('voiceProxyUrl').value) ? $('voiceProxyUrl').value.trim() : '',
+        appKey: ($('voiceAppKey') && $('voiceAppKey').value) ? $('voiceAppKey').value.trim() : '',
+        accessKey: ($('voiceAccessKey') && $('voiceAccessKey').value) ? $('voiceAccessKey').value.trim() : ''
+      });
+      alert('已保存。');
+    });
+
+    loadState();
+    if (state.records && state.records.length) {
+      var hadManual = false;
+      state.records.forEach(function(r) {
+        if (r.reason === '手动修改') { r.reason = ''; hadManual = true; }
+      });
+      if (hadManual) saveState();
+    }
+    $('term').value = state.term;
+    $('week').value = state.week;
+    if ($('mondayDate')) $('mondayDate').value = state.mondayDate || '';
+    var dictTa = $('dictText');
+    if (dictTa) dictTa.value = Object.entries(getDict()).map(function(e) { return e[0] + '→' + e[1]; }).join('\n');
+    renderSummary();
+    renderInfoBox();
+  </script>
+</body>
+</html>
